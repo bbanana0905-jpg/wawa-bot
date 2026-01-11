@@ -4,45 +4,72 @@ import fetch from "node-fetch";
 const app = express();
 app.use(express.json());
 
+// Render 포트 설정 (중요)
 const PORT = process.env.PORT || 3000;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-app.post("/chat", async (req, res) => {
+// === 메인 웹훅 ===
+app.post("/", async (req, res) => {
   try {
-    const userMessage = req.body.message;
+    // 🔍 카카오에서 오는 전체 데이터 로그
+    console.log("카카오 원본:", JSON.stringify(req.body, null, 2));
+
+    // ✅ 사용자가 실제로 보낸 말
+    const userMessage = req.body?.userRequest?.utterance;
+
+    console.log("사용자 말:", userMessage);
+
+    // 안전장치
     if (!userMessage) {
-      return res.json({ reply: "메시지를 못 받았어 ㅠㅠ" });
+      return res.json({
+        version: "2.0",
+        template: {
+          outputs: [
+            {
+              simpleText: {
+                text: "⚠️ 메시지를 이해하지 못했어. 다시 말해줄래?"
+              }
+            }
+          ]
+        }
+      });
     }
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "나는 귀여운 강아지 와와봇이야." },
-          { role: "user", content: userMessage }
+    // 🤖 와와 기본 응답 (일단 GPT 안 씀)
+    const reply = `와와: ${userMessage} 😊`;
+
+    // ✅ 카카오 규격 응답
+    return res.json({
+      version: "2.0",
+      template: {
+        outputs: [
+          {
+            simpleText: {
+              text: reply
+            }
+          }
         ]
-      })
+      }
     });
 
-    const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || "응답 실패 ㅠㅠ";
+  } catch (error) {
+    console.error("서버 에러:", error);
 
-    res.json({ reply });
-  } catch (e) {
-    console.error(e);
-    res.json({ reply: "서버 오류야 ㅠㅠ 잠시 후 다시 말해줘!" });
+    return res.json({
+      version: "2.0",
+      template: {
+        outputs: [
+          {
+            simpleText: {
+              text: "🚨 와와가 잠깐 아파… 다시 불러줘!"
+            }
+          }
+        ]
+      }
+    });
   }
 });
 
-app.get("/", (req, res) => {
-  res.send("와와봇 서버 실행 중!");
-});
-
+// === 서버 실행 ===
 app.listen(PORT, () => {
-  console.log("와와봇 서버 실행 중:", PORT);
+  console.log(`✅ 와와 서버 실행 중 : ${PORT}`);
 });
