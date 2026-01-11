@@ -1,44 +1,38 @@
-import express from "express";
-import fetch from "node-fetch";
+const express = require("express");
+const bodyParser = require("body-parser");
 
 const app = express();
-app.use(express.json());
+app.use(bodyParser.json());
 
-// Render 포트 설정 (중요)
 const PORT = process.env.PORT || 3000;
 
-// === 메인 웹훅 ===
-app.post("/", async (req, res) => {
+// 메신저봇 R → POST 요청
+app.post("/", (req, res) => {
   try {
-    // 🔍 카카오에서 오는 전체 데이터 로그
-    console.log("카카오 원본:", JSON.stringify(req.body, null, 2));
+    const msg =
+      req.body?.content ||
+      req.body?.msg ||
+      req.body?.message ||
+      "";
 
-    // ✅ 사용자가 실제로 보낸 말
-    const userMessage = req.body?.userRequest?.utterance;
+    let reply = "";
 
-    console.log("사용자 말:", userMessage);
-
-    // 안전장치
-    if (!userMessage) {
-      return res.json({
+    if (!msg.includes("와와봇")) {
+      return res.status(200).json({
         version: "2.0",
-        template: {
-          outputs: [
-            {
-              simpleText: {
-                text: "⚠️ 메시지를 이해하지 못했어. 다시 말해줄래?"
-              }
-            }
-          ]
-        }
+        template: { outputs: [] }
       });
     }
 
-    // 🤖 와와 기본 응답 (일단 GPT 안 씀)
-    const reply = `와와: ${userMessage} 😊`;
+    if (msg.includes("안녕")) {
+      reply = "와와 안녕!! 🐶";
+    } else if (msg.includes("날씨")) {
+      reply = "와와 아직 날씨는 못 보지만 곧 배울게!";
+    } else {
+      reply = "와와 여기 있어! 뭐 도와줄까?";
+    }
 
-    // ✅ 카카오 규격 응답
-    return res.json({
+    res.status(200).json({
       version: "2.0",
       template: {
         outputs: [
@@ -50,17 +44,14 @@ app.post("/", async (req, res) => {
         ]
       }
     });
-
-  } catch (error) {
-    console.error("서버 에러:", error);
-
-    return res.json({
+  } catch (err) {
+    res.status(200).json({
       version: "2.0",
       template: {
         outputs: [
           {
             simpleText: {
-              text: "🚨 와와가 잠깐 아파… 다시 불러줘!"
+              text: "⚠️ 서버 오류가 났어. 잠시 후 다시 말해줘!"
             }
           }
         ]
@@ -69,7 +60,11 @@ app.post("/", async (req, res) => {
   }
 });
 
-// === 서버 실행 ===
+// Render 헬스체크
+app.get("/", (req, res) => {
+  res.send("와와봇 서버 살아있어 🟢");
+});
+
 app.listen(PORT, () => {
-  console.log(`✅ 와와 서버 실행 중 : ${PORT}`);
+  console.log(`🐶 와와봇 서버 실행 중 : ${PORT}`);
 });
