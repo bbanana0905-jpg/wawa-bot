@@ -1,22 +1,22 @@
 import express from "express";
-import fetch from "node-fetch";
 
 const app = express();
 app.use(express.json());
 
 app.post("/chat", async (req, res) => {
+  const userMsg = req.body.message || "";
+
+  // "와와봇" 안 부르면 무응답
+  if (!userMsg.includes("와와봇")) {
+    return res.json({ reply: "" });
+  }
+
   try {
-    const userMsg = req.body.msg;
-
-    if (!userMsg || userMsg.trim() === "") {
-      return res.json({ reply: "와와봇이 들을 말이 없어 🐶" });
-    }
-
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
@@ -37,12 +37,12 @@ app.post("/chat", async (req, res) => {
 
     const data = await response.json();
     const reply =
-      data.choices?.[0]?.message?.content ??
+      data.choices?.[0]?.message?.content ||
       "와와봇이 잠깐 멍 때렸어 🐶";
 
     res.json({ reply });
   } catch (err) {
-    res.json({ reply: "와와봇 서버가 잠깐 아파 🐾" });
+    res.json({ reply: "와와봇 서버가 잠깐 아파 🤕" });
   }
 });
 
